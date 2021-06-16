@@ -3,6 +3,7 @@ package br.com.alura;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
+import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -11,15 +12,20 @@ import org.apache.kafka.common.serialization.StringSerializer;
 public class NewOrderMain {
     public static void main(String[] args) throws InterruptedException, ExecutionException {
         var producer = new KafkaProducer<String, String>(properties());
-        var value = "3,2142421,21324154363";
+        var value = "3novoPedido,2142421,21324154363";
         var record = new ProducerRecord<String, String>("ECOMMERCE_NEW_ORDER", value, value);
-        producer.send(record, (data, ex) -> {
-            if(ex != null) {
+        Callback callback = (data, ex) -> {
+            if (ex != null) {
                 ex.printStackTrace();
                 return;
             }
-            System.out.println("Sucesso ao enviar: " + data.topic() + " / Partição: " + data.partition() + " / Offset: " + data.offset() + " / Instante: " + data.timestamp());
-        }).get();
+            System.out.println("Sucesso ao enviar: " + data.topic() + " / Partição: " + data.partition() + " / Offset: "
+                    + data.offset() + " / Instante: " + data.timestamp());
+        };
+        var email = "Thank you for your order! We are processing it";
+        var emailRecord = new ProducerRecord<String, String>("ECOMMERCE_SEND_EMAIL", email, email);
+        producer.send(record, callback).get();
+        producer.send(emailRecord, callback).get();
     }
 
     private static Properties properties() {
